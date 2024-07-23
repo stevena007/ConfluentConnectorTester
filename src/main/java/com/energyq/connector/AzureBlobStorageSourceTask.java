@@ -13,6 +13,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+
 public class AzureBlobStorageSourceTask extends SourceTask {
 
     private String accountName;
@@ -54,19 +58,46 @@ public class AzureBlobStorageSourceTask extends SourceTask {
             if (blobItem.getName().matches(blobNamePattern)) {
 
                 BlobClient blobClient = containerClient.getBlobClient(blobItem.getName());
-
                 String blobContent = new String(blobClient.downloadContent().toBytes(), StandardCharsets.UTF_8);
 
-                Map<String, String> sourcePartition = new HashMap<>();
-                sourcePartition.put("blobName", blobItem.getName());
+                try {
+                    // Convert BlobContent to a JSON object using Jackson ObjectMapper
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    JsonNode jsonNode = objectMapper.readTree(blobContent);
 
-                Map<String, String> sourceOffset = new HashMap<>();
-                sourceOffset.put("position",
-                        String.valueOf(blobItem.getProperties().getLastModified().toInstant().toEpochMilli()));
+                    // For each JSON node, create a SourceRecord
+                    for (JsonNode node : jsonNode) {
 
-                SourceRecord sourceRecord = new SourceRecord(sourcePartition, sourceOffset, topic, null, blobContent);
+                        Map<String, String> sourcePartition = new HashMap<>();
+                        sourcePartition.put("blobName", blobItem.getName());
 
-                records.add(sourceRecord);
+                        Map<String, String> sourceOffset = new HashMap<>();
+                        sourceOffset.put("position",
+                                String.valueOf(blobItem.getProperties().getLastModified().toInstant().toEpochMilli()));
+
+                        SourceRecord sourceRecord = new SourceRecord(sourcePartition, sourceOffset, topic, null,
+                                node.toString());
+
+                        records.add(sourceRecord);
+                    }
+                } catch (JsonProcessingException e) {
+                    // move the blob to a dead-letter container for further analysis
+                    System.err.println("Error processing blob: " + blobItem.getName());
+                }
+
+                /**
+                 * Map<String, String> sourcePartition = new HashMap<>();
+                 * sourcePartition.put("blobName", blobItem.getName());
+                 * 
+                 * Map<String, String> sourceOffset = new HashMap<>();
+                 * sourceOffset.put("position",
+                 * String.valueOf(blobItem.getProperties().getLastModified().toInstant().toEpochMilli()));
+                 * 
+                 * SourceRecord sourceRecord = new SourceRecord(sourcePartition, sourceOffset,
+                 * topic, null, blobContent);
+                 * 
+                 * records.add(sourceRecord);
+                 */
 
                 // Remove the blob to avoid processing it again
                 blobClient.delete();
