@@ -68,8 +68,13 @@ public class AzureBlobStorageSourceTask extends SourceTask {
 
                 records.add(sourceRecord);
 
+                // Rename the blob to avoid processing it again
+                String newBlobName = blobItem.getName() + ".processed";
+                blobClient.renameTo(newBlobName);
+
             }
         }
+
         return records;
     }
 
