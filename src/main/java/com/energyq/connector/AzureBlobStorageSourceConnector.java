@@ -6,21 +6,23 @@ import org.apache.kafka.common.config.ConfigDef.Importance;
 import org.apache.kafka.common.config.ConfigDef.Type;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.source.SourceConnector;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class AzureBlobStorageSourceConnector extends SourceConnector {
 
-    private Map<String, String> configProps;
+    private Map<String, String> props;
 
     @Override
     public String version() {
-        return "1.0";
+        return AzureBlobStorageSourceConnector.class.getPackage().getImplementationVersion();
     }
 
     @Override
     public void start(Map<String, String> props) {
-        configProps = props;
+        this.props = props;
     }
 
     @Override
@@ -30,7 +32,14 @@ public class AzureBlobStorageSourceConnector extends SourceConnector {
 
     @Override
     public List<Map<String, String>> taskConfigs(int maxTasks) {
-        return List.of(configProps);
+
+        List<Map<String, String>> taskConfigs = new ArrayList<>();
+        for (int i = 0; i < maxTasks; i++) {
+            Map<String, String> taskConfig = new HashMap<>(this.props);
+            taskConfig.put(AzureBlobStorageSourceTask.TASK_ID, Integer.toString(i));
+            taskConfigs.add(taskConfig);
+        }
+        return taskConfigs;
     }
 
     @Override
@@ -40,18 +49,6 @@ public class AzureBlobStorageSourceConnector extends SourceConnector {
 
     @Override
     public ConfigDef config() {
-        // Define configuration options here
-        return new ConfigDef()
-                .define("azbs.account.name", ConfigDef.Type.STRING, ConfigDef.Importance.HIGH,
-                        "Azure Blob Storage account name")
-                .define("azbs.account.key", ConfigDef.Type.PASSWORD, ConfigDef.Importance.HIGH,
-                        "Azure Blob Storage account key")
-                .define("azbs.container.name", ConfigDef.Type.STRING, ConfigDef.Importance.HIGH,
-                        "Azure Blob Storage container name")
-                .define("azbs.blob.name.pattern", ConfigDef.Type.STRING, ConfigDef.Importance.HIGH,
-                        "Pattern to match blob names")
-                .define("azbs.poll.interval.ms", ConfigDef.Type.INT, ConfigDef.Importance.MEDIUM,
-                        "Poll interval in milliseconds")
-                .define("topic", ConfigDef.Type.STRING, ConfigDef.Importance.HIGH, "Kafka topic to publish data to");
+        return AzureBlobStorageConnectorConfig.conf();
     }
 }

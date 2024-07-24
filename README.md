@@ -4,9 +4,9 @@ Test Repo which consumes a BLOB from Azure and send to Confluent Cloud
 
 Example Confluent JSON format
 
-{
-"name": "azure-blob-storage-source-connector",
-"config": {
+    {
+        "name": "azure-blob-storage-source-connector",
+        "config": {
 "connector.class": "com.energyq.connector.AzureBlobStorageSourceConnector",
 "tasks.max": "1",
 "azbs.account.name": "your_account_name",

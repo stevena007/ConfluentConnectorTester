@@ -3,10 +3,17 @@
     <groupId>com.energyq.connector</groupId>
     <artifactId>azure-blob-storage-connector</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>blobstorage-kafka-connector</name>
+
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>    
+
+    <description>A dummy Kafka Connect source connector that reads data from Azure Blob Storage.</description>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.kafka</groupId>
@@ -23,5 +30,17 @@
             <artifactId>jackson-databind</artifactId>
             <version>2.17.2</version>
         </dependency>
+
+        <!-- logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.7</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-reload4j</artifactId>
+            <version>2.0.7</version>
+        </dependency>        
     </dependencies>
 </project>

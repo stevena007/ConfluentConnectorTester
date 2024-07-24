@@ -19,29 +19,36 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 public class AzureBlobStorageSourceTask extends SourceTask {
 
+    public static final String TASK_ID = "task.id";
+    public static final String CURRENT_ITERATION = "current.iteration";
+
     private String accountName;
     private String accountKey;
     private String containerName;
     private String blobNamePattern;
     private String topic;
     private BlobContainerClient containerClient;
+    private AzureBlobStorageConnectorConfig config;
 
     @Override
     public String version() {
-        return "1.0";
+        return AzureBlobStorageSourceTask.class.getPackage().getImplementationVersion();
     }
 
     @Override
     public void start(Map<String, String> props) {
 
-        accountName = props.get("azbs.account.name");
-        accountKey = props.get("azbs.account.key");
-        containerName = props.get("azbs.container.name");
-        blobNamePattern = props.get("azbs.blob.name.pattern");
-        topic = props.get("topic");
+        config = new AzureBlobStorageConnectorConfig(props);
+
+        accountName = config.getAccountName();
+        accountKey = config.getAccountKey();
+        containerName = config.getContainerName();
+        blobNamePattern = config.getBlobNamePattern();
+        topic = config.getKafkaTopic();
 
         String connectionString = String.format("DefaultEndpointsProtocol=https;AccountName=%s;AccountKey=%s;",
                 accountName, accountKey);
+
         containerClient = new BlobContainerClientBuilder()
                 .connectionString(connectionString)
                 .containerName(containerName)
@@ -85,21 +92,8 @@ public class AzureBlobStorageSourceTask extends SourceTask {
                     System.err.println("Error processing blob: " + blobItem.getName());
                 }
 
-                /**
-                 * Map<String, String> sourcePartition = new HashMap<>();
-                 * sourcePartition.put("blobName", blobItem.getName());
-                 * 
-                 * Map<String, String> sourceOffset = new HashMap<>();
-                 * sourceOffset.put("position",
-                 * String.valueOf(blobItem.getProperties().getLastModified().toInstant().toEpochMilli()));
-                 * 
-                 * SourceRecord sourceRecord = new SourceRecord(sourcePartition, sourceOffset,
-                 * topic, null, blobContent);
-                 * 
-                 * records.add(sourceRecord);
-                 */
-
                 // Remove the blob to avoid processing it again
+                // Will need something a little more sophisticated in a production scenario
                 blobClient.delete();
 
             }
